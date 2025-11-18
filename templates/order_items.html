@@ -1,0 +1,158 @@
+{% extends 'base.html' %}
+
+{% block title %}Подробности заказа{% endblock %}
+
+{% block changing_content %}
+<div class="container">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1>Книги из вашего заказа</h1>
+        <a href="{{ url_for('main.orders') }}" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left"></i> Назад к заказам
+        </a>
+    </div>
+
+    {% if not books_data %}
+    <div class="text-center py-5">
+        <i class="bi bi-book" style="font-size: 4rem; color: #6c757d;"></i>
+        <h3 class="mt-3">Книги не найдены</h3>
+        <p class="text-muted">Информация о книгах недоступна</p>
+    </div>
+    {% else %}
+    <div class="row">
+        {% for book in books_data %}
+        <div class="col-lg-6 mb-4">
+            <div class="card h-100 shadow-sm">
+                <div class="row g-0">
+                    <div class="col-md-4">
+                        <div class="book-image-container h-100">
+                            <img src="/static/images/books/{{ book.cover }}"
+                                 class="img-fluid rounded-start h-100 w-100 object-fit-cover"
+                                 alt="{{ book.title }}"
+                                 onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
+                            <div class="book-placeholder h-100" style="display: none;">
+                                <div class="d-flex align-items-center justify-content-center h-100 bg-light">
+                                    <span class="text-muted">Нет изображения</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-8">
+                        <div class="card-body d-flex flex-column h-100">
+                            <h5 class="card-title">{{ book.title }}</h5>
+                            <p class="card-text text-muted">{{ book.author }}</p>
+
+                            <div class="mb-2">
+                                <p class="mb-1"><strong>Жанр:</strong> {{ book.genre }}</p>
+                                <p class="mb-1"><strong>Год издания:</strong> {{ book.year }}</p>
+                            </div>
+
+                            {% if book.rating %}
+                            <div class="mb-3">
+                                <span class="badge bg-warning text-dark">
+                                    ★ {{ book.rating }}
+                                </span>
+                                {% if book.rating_count %}
+                                <small class="text-muted ms-2">{{ book.rating_count }} оценок</small>
+                                {% endif %}
+                            </div>
+                            {% endif %}
+
+                            {% if book.description %}
+                            <p class="card-text small text-muted flex-grow-1">
+                                {{ book.description|truncate(150) }}
+                            </p>
+                            {% endif %}
+
+                            <!-- Форма для оценки -->
+                            <div class="mt-auto">
+                                <button class="btn btn-outline-primary w-100"
+                                        data-bs-toggle="modal"
+                                        data-bs-target="#reviewModal{{ loop.index }}">
+                                    <i class="bi bi-star"></i> Поставить оценку
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Модальное окно для оценки -->
+        <div class="modal fade" id="reviewModal{{ loop.index }}" tabindex="-1">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">Оценить книгу: {{ book.title }}</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <form method="POST" action="{{ url_for('main.submit_review') }}">
+                        <input type="hidden" name="book_id" value="{{ book.id }}">
+                        <div class="modal-body">
+                            <div class="mb-3">
+                                <label class="form-label">Оценка:</label>
+                                <div class="rating-stars">
+                                    {% for i in range(5, 0, -1) %}
+                                    <div class="form-check form-check-inline">
+                                        <input class="form-check-input" type="radio" name="rating"
+                                               id="rating{{ i }}_{{ loop.index }}"
+                                               value="{{ i }}" required>
+                                        <label class="form-check-label" for="rating{{ i }}_{{ loop.index }}">
+                                            {{ i }} ★
+                                        </label>
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                            <div class="mb-3">
+                                <label for="reviewText{{ loop.index }}" class="form-label">Отзыв (необязательно):</label>
+                                <textarea class="form-control" id="reviewText{{ loop.index }}"
+                                          name="review_text" rows="4"
+                                          placeholder="Поделитесь вашим мнением о книге..."></textarea>
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-check-lg"></i> Отправить отзыв
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+</div>
+
+<style>
+.book-image-container {
+    height: 200px;
+    overflow: hidden;
+}
+
+.object-fit-cover {
+    object-fit: cover;
+}
+
+.card {
+    border: none;
+    border-radius: 12px;
+}
+
+.rating-stars .form-check-input {
+    margin-right: 5px;
+}
+
+.rating-stars .form-check-label {
+    cursor: pointer;
+    padding: 5px 10px;
+    border-radius: 5px;
+    transition: background-color 0.2s;
+}
+
+.rating-stars .form-check-label:hover {
+    background-color: #f8f9fa;
+}
+</style>
+{% endblock %}

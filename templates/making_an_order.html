@@ -1,0 +1,180 @@
+{% extends 'base.html' %}
+
+{% block title %}Оформление заказа{% endblock %}
+
+{% block changing_content %}
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card shadow-sm">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0"><i class="bi bi-cart-check"></i> Оформление заказа</h4>
+                </div>
+                <div class="card-body">
+                    <!-- Информация о заказе -->
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <h5>Детали заказа</h5>
+                            <div class="border rounded p-3">
+                                {% for item in cart_items %}
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <span class="small">{{ item.book.title }}</span>
+                                    <span class="small">{{ item.cart_item.count }} × {{ "%.2f"|format(item.book.price) }} ₽</span>
+                                </div>
+                                {% endfor %}
+                                <hr>
+                                <div class="d-flex justify-content-between fw-bold">
+                                    <span>Итого:</span>
+                                    <span class="text-primary">{{ "%.2f"|format(total_price) }} ₽</span>
+                                </div>
+                                <div class="mt-2">
+                                    <small class="text-muted">Дата доставки: {{ delivery_date }}</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Форма заказа -->
+                    <form method="POST" action="{{ url_for('main.making_an_order') }}">
+                        {{ form.hidden_tag() }}
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <!-- ФИО -->
+                                <div class="mb-3">
+                                    {{ form.full_name.label(class="form-label") }}
+                                    {{ form.full_name(class="form-control" + (" is-invalid" if form.full_name.errors else "")) }}
+                                    {% for error in form.full_name.errors %}
+                                    <div class="invalid-feedback">{{ error }}</div>
+                                    {% endfor %}
+                                </div>
+
+                                <!-- Телефон -->
+                                <div class="mb-3">
+                                    {{ form.phone.label(class="form-label") }}
+                                    {{ form.phone(class="form-control" + (" is-invalid" if form.phone.errors else ""), placeholder="+375291234567") }}
+                                    {% for error in form.phone.errors %}
+                                    <div class="invalid-feedback">{{ error }}</div>
+                                    {% endfor %}
+                                </div>
+
+                                <!-- Способ доставки -->
+                                <div class="mb-3">
+                                    {{ form.delivery_method.label(class="form-label") }}
+                                    {{ form.delivery_method(class="form-select" + (" is-invalid" if form.delivery_method.errors else "")) }}
+                                    {% for error in form.delivery_method.errors %}
+                                    <div class="invalid-feedback">{{ error }}</div>
+                                    {% endfor %}
+                                </div>
+
+                                <!-- Адрес доставки (показывается только если не самовывоз) -->
+                                <div class="mb-3" id="address-field" style="display: none;">
+                                    {{ form.address.label(class="form-label") }}
+                                    {{ form.address(class="form-control" + (" is-invalid" if form.address.errors else "")) }}
+                                    {% for error in form.address.errors %}
+                                    <div class="invalid-feedback">{{ error }}</div>
+                                    {% endfor %}
+                                    <small class="form-text text-muted">
+                                        Укажите полный адрес для доставки
+                                    </small>
+                                </div>
+                            </div>
+
+                            <div class="col-md-6">
+                                <!-- Способ оплаты -->
+                                <div class="mb-3">
+                                    {{ form.payment_method.label(class="form-label") }}
+                                    {{ form.payment_method(class="form-select" + (" is-invalid" if form.payment_method.errors else "")) }}
+                                    {% for error in form.payment_method.errors %}
+                                    <div class="invalid-feedback">{{ error }}</div>
+                                    {% endfor %}
+                                </div>
+
+                                <!-- Оплата при получении -->
+                                <div class="mb-3">
+                                    <div class="form-check">
+                                        {{ form.cash_on_delivery(class="form-check-input") }}
+                                        {{ form.cash_on_delivery.label(class="form-check-label") }}
+                                    </div>
+                                    <small class="form-text text-muted">
+                                        Отметьте, если требуется оплата при получении заказа
+                                    </small>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Кнопка подтверждения -->
+                        <div class="d-grid gap-2 mt-4">
+                            {{ form.submit(class="btn btn-success btn-lg") }}
+                            <a href="{{ url_for('main.cart') }}" class="btn btn-outline-secondary">
+                                <i class="bi bi-arrow-left"></i> Вернуться в корзину
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const deliveryMethod = document.getElementById('{{ form.delivery_method.id }}');
+    const addressField = document.getElementById('address-field');
+
+    function toggleAddressField() {
+        if (deliveryMethod.value === 'pickup') {
+            addressField.style.display = 'none';
+        } else {
+            addressField.style.display = 'block';
+        }
+    }
+
+    // Инициализация при загрузке
+    toggleAddressField();
+
+    // Обработчик изменения способа доставки
+    deliveryMethod.addEventListener('change', toggleAddressField);
+});
+</script>
+
+<style>
+.form-label {
+    font-weight: 600;
+    color: #2c3e50;
+}
+
+.card {
+    border: none;
+    border-radius: 12px;
+}
+
+.card-header {
+    border-radius: 12px 12px 0 0 !important;
+}
+
+.form-control, .form-select {
+    border-radius: 8px;
+    border: 2px solid #e9ecef;
+    transition: all 0.2s ease;
+}
+
+.form-control:focus, .form-select:focus {
+    border-color: #3498db;
+    box-shadow: 0 0 0 0.2rem rgba(52, 152, 219, 0.25);
+}
+
+.btn-success {
+    background: linear-gradient(135deg, #27ae60, #2ecc71);
+    border: none;
+    border-radius: 8px;
+    font-weight: 600;
+    padding: 12px;
+}
+
+.btn-success:hover {
+    background: linear-gradient(135deg, #229954, #27ae60);
+    transform: translateY(-1px);
+}
+</style>
+{% endblock %}

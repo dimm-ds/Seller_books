@@ -1,0 +1,173 @@
+{% extends 'base.html' %}
+
+{% block title %}Cart{% endblock %}
+
+{% block changing_content %}
+<div class="container">
+    <h1 class="mb-4">Корзина</h1>
+
+    {% if cart_items|length == 0 %}
+    <div class="text-center py-5">
+        <i class="bi bi-cart-x" style="font-size: 4rem; color: #6c757d;"></i>
+        <h3 class="mt-3">Ваша корзина пуста</h3>
+        <p class="text-muted">Добавьте книги из каталога</p>
+        <a href="{{ url_for('main.catalog') }}" class="btn btn-primary mt-3">
+            <i class="bi bi-book"></i> Перейти в каталогу
+        </a>
+    </div>
+    {% else %}
+    <div class="row">
+        <div class="col-lg-8">
+            <!-- Создаем список для подсчета -->
+            {% set ns = namespace(total_items=0, total_price=0) %}
+
+            {% for item in cart_items %}
+            <!-- Обновляем счетчики на каждой итерации -->
+            {% set ns.total_items = ns.total_items + item.cart_item.count %}
+            {% set ns.total_price = ns.total_price + (item.cart_item.count * item.book.price) %}
+
+            <div class="card mb-3 shadow-sm">
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-2">
+                            <div class="book-image-container">
+                                <img src="/static/images/books/{{ item.book.cover }}"
+                                     class="img-fluid rounded"
+                                     alt="{{ item.book.title }}"
+                                     onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
+                                <div class="book-placeholder" style="display: none;">
+                                    <div class="d-flex align-items-center justify-content-center h-100 bg-light rounded">
+                                        <span class="text-muted small">Нет изображения</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <h5 class="card-title">{{ item.book.title }}</h5>
+                            <p class="card-text text-muted">{{ item.book.author }}</p>
+                            <p class="card-text text-primary h5 mb-2">
+                                {{ "%.2f"|format(item.book.price) }} ₽
+                            </p>
+                            {% if item.book.rating %}
+                            <span class="badge bg-warning text-dark">
+                                ★ {{ item.book.rating }}
+                            </span>
+                            {% endif %}
+                        </div>
+
+                        <div class="col-md-4">
+                            <div class="d-flex flex-column h-100">
+                                <div class="mb-3">
+                                    <label class="form-label">Количество:</label>
+                                    <!-- ГОРИЗОНТАЛЬНОЕ РАСПОЛОЖЕНИЕ КНОПОК -->
+                                    <div class="d-flex align-items-center justify-content-start">
+                                        <!-- Кнопка минус СЛЕВА -->
+                                        <form action="{{ url_for('main.decrease_from_cart') }}" method="POST" class="me-2">
+                                            <input type="hidden" name="book_id" value="{{ item.book.id }}">
+                                            <button type="submit" class="btn btn-outline-secondary btn-sm"
+                                                    {% if item.cart_item.count <= 1 %}disabled{% endif %}>
+                                                <i class="bi bi-dash"></i>
+                                            </button>
+                                        </form>
+
+                                        <!-- Количество ПОСЕРЕДИНЕ -->
+                                        <span class="mx-3 fw-bold">{{ item.cart_item.count }}</span>
+
+                                        <!-- Кнопка плюс СПРАВА -->
+                                        <form action="{{ url_for('main.add_to_cart') }}" method="POST" class="ms-2">
+                                            <input type="hidden" name="book_id" value="{{ item.book.id }}">
+                                            <button type="submit" class="btn btn-outline-secondary btn-sm">
+                                                <i class="bi bi-plus"></i>
+                                            </button>
+                                        </form>
+                                    </div>
+                                </div>
+
+                                <div class="mt-auto">
+                                    <div class="d-grid gap-2">
+                                        <button class="btn btn-outline-info btn-sm"
+                                                data-bs-toggle="modal"
+                                                data-bs-target="#bookModal{{ item.book.id }}">
+                                            <i class="bi bi-info-circle"></i> Подробнее
+                                        </button>
+
+                                        <form action="{{ url_for('main.remove_from_cart') }}" method="POST">
+                                            <input type="hidden" name="book_id" value="{{ item.book.id }}">
+                                            <button type="submit" class="btn btn-outline-danger btn-sm w-100">
+                                                <i class="bi bi-trash"></i> Удалить
+                                            </button>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Модальное окно для книги -->
+            <div class="modal fade" id="bookModal{{ item.book.id }}" tabindex="-1">
+                <div class="modal-dialog modal-lg">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title">{{ item.book.title }}</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                        </div>
+                        <div class="modal-body">
+                            <div class="row">
+                                <div class="col-md-4">
+                                    <img src="/static/images/books/{{ item.book.cover }}"
+                                         class="img-fluid rounded"
+                                         alt="{{ item.book.title }}"
+                                         onerror="this.src='//via.placeholder.com/300x400/eee/999?text=Нет+изображения'">
+                                </div>
+                                <div class="col-md-8">
+                                    <p><strong>Автор:</strong> {{ item.book.author }}</p>
+                                    <p><strong>Жанр:</strong> {{ item.book.genre }}</p>
+                                    <p><strong>Год издания:</strong> {{ item.book.year }}</p>
+                                    <p><strong>Цена:</strong> <span class="text-primary h5">{{ "%.2f"|format(item.book.price) }} ₽</span></p>
+                                    {% if item.book.rating %}
+                                    <p><strong>Рейтинг:</strong> ★ {{ item.book.rating }}/5</p>
+                                    {% endif %}
+                                    <p><strong>Описание:</strong></p>
+                                    <p class="text-muted">{{ item.book.description }}</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Закрыть</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+
+        <div class="col-lg-4">
+            <div class="card shadow-sm">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">Итого</h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-flex justify-content-between mb-2">
+                        <span>Товаров:</span>
+                        <span>{{ ns.total_items }} шт.</span>
+                    </div>
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <span class="fw-bold">Итого:</span>
+                        <span class="h5 text-primary mb-0">{{ "%.2f"|format(ns.total_price) }} ₽</span>
+                    </div>
+
+                    <div class="d-grid gap-2">
+                        <a href="{{ url_for('main.making_an_order') }}" class="btn btn-success btn-lg">
+                            <i class="bi bi-credit-card"></i> Перейти к оформлению
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

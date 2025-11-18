@@ -1,0 +1,650 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+	<head>
+		<meta charset="UTF-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1.0">
+		<title>Книжный магазин</title>
+		<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet"/>
+		<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+		<style>
+			.dropdown-submenu {
+		  position: relative;
+		}
+
+		.dropdown-submenu .dropdown-menu {
+		  top: 0;
+		  left: 100%;
+		  margin-top: -1px;
+		  margin-left: 1px;
+		  display: none;
+		  min-width: 250px;
+		  position: absolute;
+		  z-index: 1000;
+		}
+
+		.dropdown-submenu:hover .dropdown-menu {
+		  display: block;
+		}
+
+		.dropdown-submenu>.dropdown-item::after {
+		  content: "▶";
+		  float: right;
+		  margin-left: 10px;
+		}
+
+		.dropdown-item {
+		  white-space: nowrap;
+		  padding: 8px 16px;
+		}
+
+		.catalog-title {
+		  font-weight: bold;
+		  font-size: 1.8rem;
+		  margin-bottom: 2rem;
+		  color: #2c3e50;
+		  text-align: center;
+		  border-bottom: 2px solid #3498db;
+		  padding-bottom: 10px;
+		}
+
+		.main-content {
+		  min-height: 70vh;
+		}
+
+		.catalog-section {
+		  background-color: #f8f9fa;
+		  border-radius: 8px;
+		  padding: 25px;
+		  height: 100%;
+		}
+
+		/* ОБНОВЛЕННЫЕ СТИЛИ ДЛЯ КАРТОЧЕК КНИГ */
+		.book-card {
+		  border: none;
+		  border-radius: 12px;
+		  transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+		  height: 100%;
+		}
+
+		.book-card:hover {
+		  transform: translateY(-5px);
+		  box-shadow: 0 8px 25px rgba(0,0,0,0.15) !important;
+		}
+
+		.book-image-container {
+		  height: 250px;
+		  overflow: hidden;
+		  border-radius: 12px 12px 0 0;
+		}
+
+		.book-cover {
+		  height: 100%;
+		  width: 100%;
+		  object-fit: cover;
+		  transition: transform 0.3s ease;
+		}
+
+		.book-card:hover .book-cover {
+		  transform: scale(1.05);
+		}
+
+		.book-title {
+		  font-weight: 600;
+		  line-height: 1.3;
+		  display: -webkit-box;
+		  -webkit-line-clamp: 2;
+		  -webkit-box-orient: vertical;
+		  overflow: hidden;
+		  color: #2c3e50;
+		  margin-bottom: 0.5rem;
+		}
+
+		.book-author {
+		  font-size: 0.9rem;
+		  color: #6c757d;
+		  margin-bottom: 0.5rem;
+		}
+
+		.book-description {
+		  display: -webkit-box;
+		  -webkit-line-clamp: 3;
+		  -webkit-box-orient: vertical;
+		  overflow: hidden;
+		  font-size: 0.85rem;
+		  color: #6c757d;
+		}
+
+		.book-price {
+		  font-weight: 700;
+		  color: #2c3e50;
+		  font-size: 1.25rem;
+		}
+
+		/* Стили для кнопок */
+		.btn-add-to-cart {
+		  font-weight: 600;
+		  transition: all 0.2s ease;
+		  background: linear-gradient(135deg, #3498db, #2980b9);
+		  border: none;
+		  border-radius: 6px;
+		}
+
+		.btn-add-to-cart:hover {
+		  transform: scale(1.02);
+		  background: linear-gradient(135deg, #2980b9, #3498db);
+		}
+
+		.btn-book-info {
+		  border-radius: 6px;
+		  font-weight: 500;
+		}
+
+		/* Обновленный контейнер для новинок */
+		.novelties-container {
+		  max-height: none; /* Убираем ограничение высоты для каталога */
+		  overflow-y: visible; /* Убираем скролл */
+		  padding: 20px 0;
+		}
+
+		/* Адаптивность для карточек книг */
+		@media (max-width: 1200px) {
+		  .book-image-container {
+			height: 220px;
+		  }
+		}
+
+		@media (max-width: 768px) {
+		  .book-image-container {
+			height: 200px;
+		  }
+
+		  .book-title {
+			font-size: 1rem;
+		  }
+
+		  .book-price {
+			font-size: 1.1rem;
+		  }
+		}
+
+		@media (max-width: 576px) {
+		  .book-image-container {
+			height: 180px;
+		  }
+
+		  .catalog-section {
+			padding: 15px;
+		  }
+		}
+
+		/* Стили для модального окна */
+		.modal-book-image {
+		  border-radius: 8px;
+		  box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+		}
+
+		.modal-book-title {
+		  color: #2c3e50;
+		  font-weight: 700;
+		}
+
+		/* Стили для сетки */
+		.book-grid {
+		  display: grid;
+		  gap: 1.5rem;
+		}
+
+		/* Стили для состояния загрузки */
+		.book-card-skeleton {
+		  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+		  background-size: 200% 100%;
+		  animation: loading 1.5s infinite;
+		  border-radius: 12px;
+		  height: 400px;
+		}
+
+		@keyframes loading {
+		  0% {
+			background-position: 200% 0;
+		  }
+		  100% {
+			background-position: -200% 0;
+		  }
+		}
+
+		/* Стили для пустого состояния */
+		.empty-catalog {
+		  text-align: center;
+		  padding: 3rem 1rem;
+		  color: #6c757d;
+		}
+
+		.empty-catalog i {
+		  font-size: 4rem;
+		  margin-bottom: 1rem;
+		  color: #bdc3c7;
+		}
+
+		.catalog-list {
+		  list-style: none;
+		  padding: 0;
+		  margin: 0;
+		}
+
+		.catalog-list li {
+		  margin-bottom: 5px;
+		}
+
+		.catalog-main-item {
+		  font-weight: 600;
+		  font-size: 1.1rem;
+		  color: #2c3e50;
+		}
+
+
+
+
+
+
+
+		</style>
+	</head>
+
+	<body class="bg-light">
+		<!-- Хедер -->
+		<header>
+			<nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+				<div class="container">
+					<a class="navbar-brand fw-bold" href="#">Книжный магазин</a>
+
+					<div class="collapse navbar-collapse">
+						<form class="d-flex mx-auto" style="width: 400px;">
+							<input class="form-control me-2" type="search" placeholder="Поиск книг..."
+								   aria-label="Search">
+							<button class="btn btn-outline-light" type="submit">Найти</button>
+						</form>
+
+						<!-- Для авторизованных пользователей -->
+						{% if current_user.is_authenticated %}
+						<div class="navbar-nav ms-auto align-items-center">
+							<a class="nav-link" href="/orders">Заказы</a>
+							<a class="nav-link" href="/cart">Корзина</a>
+
+							<div class="nav-item dropdown">
+								<a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
+									<i class="bi bi-person"></i> {{ current_user.username }}
+								</a>
+								<ul class="dropdown-menu dropdown-menu-end">
+									<li><a class="dropdown-item" href="/profile"><i class="bi bi-person-circle"></i>
+										Профиль</a></li>
+									<li>
+										<hr class="dropdown-divider">
+									</li>
+									<li><a class="dropdown-item" href="/logout"><i class="bi bi-box-arrow-right"></i>
+										Выйти</a></li>
+								</ul>
+							</div>
+						</div>
+						<!-- Для неавторизованных пользователей -->
+						{% else %}
+						<div class="navbar-nav ms-auto">
+							<a class="nav-link" href="/login">Войти</a>
+							<a class="nav-link" href="/register">Регистрация</a>
+						</div>
+						{% endif %}
+					</div>
+				</div>
+			</nav>
+		</header>
+
+		<!-- Основной контент -->
+		<main class="container py-4 main-content">
+			<div class="row">
+				<!-- Левая часть - каталог -->
+				<div class="col-md-4">
+					<h2 class="catalog-title">Каталог книг</h2>
+					<div class="catalog-section">
+						<ul class="catalog-list">
+							<!-- Художественная литература -->
+							<li class="dropdown-submenu">
+								<a class="dropdown-item catalog-main-item"
+								   href="{{ url_for('main.catalog', category='fiction') }}">1. Художественная
+									литература</a>
+								<ul class="dropdown-menu">
+									<li><a class="dropdown-item"
+										   href="{{ url_for('main.catalog', subcategory='foreign_modern') }}">Зарубежная
+										современная литература</a></li>
+									<li><a class="dropdown-item"
+										   href="{{ url_for('main.catalog', subcategory='foreign_classic') }}">Зарубежная
+										классическая литература</a></li>
+									<li><a class="dropdown-item"
+										   href="{{ url_for('main.catalog', subcategory='russian_modern') }}">Русская
+										современная литература</a></li>
+									<li><a class="dropdown-item"
+										   href="{{ url_for('main.catalog', subcategory='russian_classic') }}">Русская
+										классическая литература</a></li>
+									<li><a class="dropdown-item"
+										   href="{{ url_for('main.catalog', subcategory='fantasy') }}">Фантастика,
+										фэнтези</a></li>
+									<li><a class="dropdown-item"
+										   href="{{ url_for('main.catalog', subcategory='detective') }}">Детектив</a>
+									</li>
+									<li><a class="dropdown-item"
+										   href="{{ url_for('main.catalog', subcategory='romance') }}">Любовный
+										роман</a></li>
+									<li><a class="dropdown-item"
+										   href="{{ url_for('main.catalog', subcategory='belarusian') }}">Белорусская
+										литература</a></li>
+								</ul>
+							</li>
+
+							<!-- Нехудожественная литература -->
+							<li class="dropdown-submenu">
+								<a class="dropdown-item catalog-main-item"
+								   href="{{ url_for('main.catalog', category='nonfiction') }}">2. Нехудожественная
+									литература</a>
+								<ul class="dropdown-menu">
+									<li><a class="dropdown-item"
+										   href="{{ url_for('main.catalog', subcategory='scientific') }}">Научная и
+										специальная литература</a></li>
+									<li><a class="dropdown-item"
+										   href="{{ url_for('main.catalog', subcategory='popular_science') }}">Научно-популярная
+										литература</a></li>
+									<li><a class="dropdown-item"
+										   href="{{ url_for('main.catalog', subcategory='home_cooking') }}">Домашний
+										мир, кулинария</a></li>
+									<li><a class="dropdown-item"
+										   href="{{ url_for('main.catalog', subcategory='travel') }}">Путеводители,
+										карты, ПДД</a></li>
+									<li><a class="dropdown-item"
+										   href="{{ url_for('main.catalog', subcategory='languages') }}">Иностранные
+										языки</a></li>
+									<li><a class="dropdown-item"
+										   href="{{ url_for('main.catalog', subcategory='creativity') }}">Творчество,
+										саморазвитие</a></li>
+									<li><a class="dropdown-item" href="{{ url_for('main.catalog', subcategory='it') }}">ИТ-литература</a>
+									</li>
+									<li><a class="dropdown-item"
+										   href="{{ url_for('main.catalog', subcategory='beauty_sport') }}">Красота,
+										спорт, питание</a></li>
+								</ul>
+							</li>
+
+							<!-- Детская литература -->
+							<li class="dropdown-submenu">
+								<a class="dropdown-item catalog-main-item"
+								   href="{{ url_for('main.catalog', category='children') }}">3. Детская литература</a>
+								<ul class="dropdown-menu">
+									<li><a class="dropdown-item"
+										   href="{{ url_for('main.catalog', subcategory='children_fiction') }}">Художественная
+										литература</a></li>
+									<li><a class="dropdown-item"
+										   href="{{ url_for('main.catalog', subcategory='children_educational') }}">Развивающая
+										литература</a></li>
+									<li><a class="dropdown-item"
+										   href="{{ url_for('main.catalog', subcategory='children_leisure') }}">Досуг,
+										творчество</a></li>
+									<li><a class="dropdown-item"
+										   href="{{ url_for('main.catalog', subcategory='children_encyclopedias') }}">Энциклопедии</a>
+									</li>
+									<li><a class="dropdown-item"
+										   href="{{ url_for('main.catalog', subcategory='children_interactive') }}">Интерактивные,
+										игровые книги</a></li>
+									<li><a class="dropdown-item"
+										   href="{{ url_for('main.catalog', subcategory='parents_books') }}">Книги для
+										родителей</a></li>
+								</ul>
+							</li>
+
+							<!-- Бизнес-литература -->
+							<li class="dropdown-submenu">
+								<a class="dropdown-item catalog-main-item"
+								   href="{{ url_for('main.catalog', category='business') }}">4. Бизнес-литература</a>
+								<ul class="dropdown-menu">
+									<li><a class="dropdown-item"
+										   href="{{ url_for('main.catalog', subcategory='business_selfdev') }}">Саморазвитие,
+										карьера</a></li>
+									<li><a class="dropdown-item"
+										   href="{{ url_for('main.catalog', subcategory='business_management') }}">Менеджмент,
+										управление</a></li>
+									<li><a class="dropdown-item"
+										   href="{{ url_for('main.catalog', subcategory='business_marketing') }}">Маркетинг,
+										реклама</a></li>
+									<li><a class="dropdown-item"
+										   href="{{ url_for('main.catalog', subcategory='business_success') }}">Истории
+										успеха</a></li>
+									<li><a class="dropdown-item"
+										   href="{{ url_for('main.catalog', subcategory='business_entrepreneurship') }}">Предпринимательство</a>
+									</li>
+								</ul>
+							</li>
+
+							<!-- Учебная литература -->
+							<li class="dropdown-submenu">
+								<a class="dropdown-item catalog-main-item"
+								   href="{{ url_for('main.catalog', category='educational') }}">5. Учебная
+									литература</a>
+								<ul class="dropdown-menu">
+									<li><a class="dropdown-item"
+										   href="{{ url_for('main.catalog', subcategory='exam_preparation') }}">Подготовка
+										к экзаменам и ЦТ</a></li>
+									<li><a class="dropdown-item"
+										   href="{{ url_for('main.catalog', subcategory='workbooks') }}">Рабочие тетради
+										для школьников</a></li>
+								</ul>
+							</li>
+
+							<!-- Книги на иностранном языке -->
+							<li class="dropdown-submenu">
+								<a class="dropdown-item catalog-main-item"
+								   href="{{ url_for('main.catalog', category='foreign_language') }}">6. Книги на
+									иностранном языке</a>
+								<ul class="dropdown-menu">
+									<li><a class="dropdown-item"
+										   href="{{ url_for('main.catalog', subcategory='english_books') }}">Английский</a>
+									</li>
+									<li><a class="dropdown-item"
+										   href="{{ url_for('main.catalog', subcategory='french_books') }}">Французский</a>
+									</li>
+									<li><a class="dropdown-item"
+										   href="{{ url_for('main.catalog', subcategory='german_books') }}">Немецкий</a>
+									</li>
+								</ul>
+							</li>
+
+							<!-- Комиксы, манга, артбуки -->
+							<li>
+								<a class="dropdown-item catalog-main-item"
+								   href="{{ url_for('main.catalog', category='comics_manga') }}">7. Комиксы, манга,
+									артбуки</a>
+							</li>
+						</ul>
+					</div>
+				</div>
+
+				<!-- Правая часть - контент -->
+				<div class="col-md-8">
+					<div class="d-flex flex-column h-100">
+						<!-- Топ продаж -->
+						<div class="mb-4">
+							<div class="bg-white p-4 rounded shadow-sm">
+								<h3 class="mb-4">Топ 3 продаж недели</h3>
+								<div class="row">
+									{% for book in top_books %}
+									<!-- Книга -->
+									<div class="col-md-4 mb-3">
+										<div class="card book-card h-100 shadow-sm">
+											<div class="book-image-container">
+												<img src="/static/images/books/{{ book.cover }}"
+													 class="card-img-top book-cover"
+													 alt="{{ book.title }}"
+													 onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
+												<div class="book-placeholder" style="display: none;">
+													<div class="d-flex align-items-center justify-content-center h-100 bg-light">
+														<span class="text-muted">Нет изображения</span>
+													</div>
+												</div>
+											</div>
+											<div class="card-body text-center d-flex flex-column">
+												<h5 class="card-title book-title" title="{{ book.title }}">
+													{{ book.title|truncate(30) }}
+												</h5>
+												<p class="card-text text-muted book-author">
+													{{ book.author }}
+												</p>
+												<p class="text-success fw-bold mb-2 book-price">
+													{{ "%.2f"|format(book.price) }} ₽
+												</p>
+												{% if book.rating %}
+												<span class="badge bg-warning text-dark mb-2">
+                            ★ {{ book.rating }}
+                            {% if book.rating_count %}
+                            <small class="ms-1">({{ book.rating_count }})</small>
+                            {% endif %}
+                        </span>
+												{% endif %}
+												<div class="mt-auto">
+													<div class="d-grid gap-2">
+														{% if current_user.is_authenticated %}
+														<form action="{{ url_for('main.add_to_cart') }}" method="POST">
+															<input type="hidden" name="book_id" value="{{ book.id }}">
+															<button type="submit" class="btn btn-primary btn-sm w-100">
+																<i class="bi bi-cart-plus"></i> В корзину
+															</button>
+														</form>
+														{% endif %}
+														<button class="btn btn-outline-secondary btn-sm btn-book-info"
+																data-bs-toggle="modal"
+																data-bs-target="#bookModal{{ book.id }}">
+															<i class="bi bi-info-circle"></i> Подробнее
+														</button>
+													</div>
+												</div>
+											</div>
+										</div>
+									</div>
+									{% endfor %}
+								</div>
+							</div>
+						</div>
+
+						<body>
+							{% block content_wrapper %}
+							{% if self.content() | trim %} <!-- Если контент не пустой -->
+							<div class="container d-flex justify-content-center align-items-center h-100">
+								<div class="card p-4 w-50 mw-30">
+									{% block content %}{% endblock %}
+									{% with messages = get_flashed_messages(with_categories=true) %}
+									{% if messages %}
+									{% for category, message in messages %}
+									<div class="alert alert-{{ category }}">{{ message }}</div>
+									{% endfor %}
+									{% endif %}
+									{% endwith %}
+								</div>
+							</div>
+							{% endif %}
+							{% endblock %}
+						</body>
+						<div class="flex-fill">
+							<div class="bg-white p-4 rounded shadow-sm h-100 novelties-container">
+								{% block changing_content %}
+								<p class="text-center fs-2">Выберите категорию в каталоге</p>
+								{% endblock %}
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+		</main>
+
+		<!-- Футер -->
+		<footer class="bg-dark text-white py-4 mt-5">
+			<div class="container">
+				<div class="row">
+					<div class="col-md-4">
+						<h5>Контакты</h5>
+						<p>Email: info@bookstore.ru</p>
+						<p>Телефон: +7 (123) 456-78-90</p>
+					</div>
+					<div class="col-md-4">
+						<h5>Способы доставки</h5>
+						<ul class="list-unstyled">
+							<li>✓ Курьерская доставка</li>
+							<li>✓ Самовывоз</li>
+							<li>✓ Почта России</li>
+							<li>✓ Транспортные компании</li>
+						</ul>
+					</div>
+					<div class="col-md-4">
+						<h5>Способы оплаты</h5>
+						<ul class="list-unstyled">
+							<li>✓ Банковской картой</li>
+							<li>✓ Наличными</li>
+							<li>✓ Электронные кошельки</li>
+							<li>✓ Безналичный расчет</li>
+						</ul>
+					</div>
+				</div>
+				<div class="row mt-4">
+					<div class="col-12 text-center">
+						<p>&copy; 2023 Книжный магазин. Все права защищены.</p>
+					</div>
+				</div>
+			</div>
+		</footer>
+		{% for book in top_books %}
+		<div class="modal fade" id="bookModal{{ book.id }}" tabindex="-1">
+			<div class="modal-dialog modal-lg">
+				<div class="modal-content">
+					<div class="modal-header">
+						<h5 class="modal-title">{{ book.title }}</h5>
+						<button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+					</div>
+					<div class="modal-body">
+						<div class="row">
+							<div class="col-md-4">
+								<img src="/static/images/books/{{ book.cover }}"
+									 class="img-fluid rounded modal-book-image"
+									 alt="{{ book.title }}"
+									 onerror="this.src='//via.placeholder.com/300x400/eee/999?text=Нет+изображения'">
+							</div>
+							<div class="col-md-8">
+								<p><strong>Автор:</strong> {{ book.author }}</p>
+								<p><strong>Жанр:</strong> {{ book.genre }}</p>
+								<p><strong>Год издания:</strong> {{ book.year }}</p>
+								<p><strong>Цена:</strong> <span class="text-primary h5">{{ "%.2f"|format(book.price) }} ₽</span>
+								</p>
+								{% if book.rating %}
+								<p><strong>Рейтинг:</strong> ★ {{ book.rating }}/5
+									{% if book.rating_count %}
+									<small class="text-muted">({{ book.rating_count }} оценок)</small>
+									{% endif %}
+								</p>
+								{% endif %}
+								<p><strong>Описание:</strong></p>
+								<p class="text-muted">{{ book.description }}</p>
+							</div>
+						</div>
+					</div>
+					<div class="modal-footer">
+						<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Закрыть</button>
+						{% if current_user.is_authenticated %}
+						<form action="{{ url_for('main.add_to_cart') }}" method="POST">
+							<input type="hidden" name="book_id" value="{{ book.id }}">
+							<button type="submit" class="btn btn-primary">
+								<i class="bi bi-cart-plus"></i> Добавить в корзину
+							</button>
+						</form>
+						{% endif %}
+					</div>
+				</div>
+			</div>
+		</div>
+		{% endfor %}
+
+		<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+	</body>
+
+</html>
