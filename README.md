@@ -2,16 +2,16 @@
 Веб-приложение для продажи книг с системой корзины, заказов и отзывов.
 
 ## Структура проекта
-Select books/
+Select books/  
 ├── db/  
 │   ├── database.py          # Настройка базы данных и сессий  
-│   └── models.py            # Модели SQLAlchemy
+│   └── models.py            # Модели SQLAlchemy  
 ├── scripts/  
 │   ├── books.json           # Каталог книг  
 │   └── init_data.py         # Инициализация данных  
 ├── static/  
 │   └── images/  
-│       └── books/           # Обложки книг  
+│   └── books/           # Обложки книг  
 ├── templates/               # HTML шаблоны  
 ├── appSB.py                 # Основное приложение Flask  
 ├── config.py               # Конфигурация приложения  
@@ -25,7 +25,7 @@ Select books/
 
 * **Аутентификация**: Flask-Login
 
-* **Формы*: Flask-WTF, WTForms
+* **Формы**: Flask-WTF, WTForms
 
 * **Контейнеризация**: Docker
 
@@ -33,7 +33,10 @@ Select books/
 ### 1. Установка зависимостей
 pip install flask flask-sqlalchemy flask-login flask-wtf pydantic-settings psycopg2-binary
 ### 2. Запуск PostgreSQL в Docker
-```bash
+```
+#bash
+
+
 # Создание и запуск контейнера PostgreSQL
 docker run --name seller-books-db \
   -e POSTGRES_DB=seller_books_db \
@@ -50,7 +53,10 @@ docker logs seller-books-db
 ```
 
 ### 3. Настройка окружения
-```env
+```
+#.env
+
+
 SECRET_KEY=your-secret-key-here
 DATABASE_URL=postgresql://postgres:gu7DF64Tl1ghj@localhost:5432/seller_books_db
 APP_PORT=5466
@@ -170,7 +176,10 @@ python appSB.py
 ## Разработка
 Для разработки с автоматической перезагрузкой при изменениях:
 
-```bash
+```
+#bash
+
+
 export FLASK_DEBUG=1
 python appSB.py
 ```
@@ -179,7 +188,10 @@ python appSB.py
 ## Миграции базы данных
 При изменении моделей необходимо обновить структуру базы данных в database.py:
 
-```python
+```
+#python
+
+
 def init_db():  
   Base.metadata.drop_all(bind=engine)  # Осторожно: удаляет все данные!
   Base.metadata.create_all(bind=engine)
