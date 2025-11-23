@@ -30,12 +30,37 @@ Select books/
 * **Контейнеризация**: Docker
 
 ## Установка и запуск
-### 1. Установка зависимостей
-pip install flask flask-sqlalchemy flask-login flask-wtf pydantic-settings psycopg2-binary
-### 2. Запуск PostgreSQL в Docker
+### Клонирование репозитория.
 ```
 #bash
 
+git clone https://github.com/dimm-ds/Seller_books
+cd seller_books
+```
+
+### Создание виртуального окружения и его активация.
+```
+#bash
+
+python -m venv venv
+
+# Windows
+venv\Scripts\activate
+
+# Linux/Mac  
+source venv/bin/activate
+```
+
+### Установка зависимостей.
+```
+#bash
+
+pip install -r requirements.txt
+```
+
+### Запуск PostgreSQL в Docker
+```
+#bash
 
 # Создание и запуск контейнера PostgreSQL
 docker run --name seller-books-db \
@@ -52,18 +77,17 @@ docker ps
 docker logs seller-books-db
 ```
 
-### 3. Настройка окружения
+### Настройка окружения
 ```
 #.env
 
-
 SECRET_KEY=your-secret-key-here
-DATABASE_URL=postgresql://postgres:gu7DF64Tl1ghj@localhost:5432/seller_books_db
+DATABASE_URL=postgresql://username:password@localhost:5432/database_name
 APP_PORT=5466
 DEBUG=True
 ```
 
-### 4. Инициализация базы данных
+### Инициализация базы данных
 
 python appSB.py  
 

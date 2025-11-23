@@ -1,7 +1,7 @@
 import json
 from datetime import date, timedelta
 from flask import Blueprint, flash, redirect, render_template, url_for, request
-from flask_login import login_required, login_user, logout_user, LoginManager, current_user
+from flask_login import login_required, login_user, logout_user, current_user
 from flask_wtf import FlaskForm
 from sqlalchemy import func
 from wtforms import TextAreaField, PasswordField, StringField, SelectField, BooleanField, SubmitField
@@ -12,9 +12,6 @@ from db.database import session_scope
 from db.models import User, Order, OrderItem, Book, CartItem, Review
 
 main_blueprint = Blueprint("main", __name__)
-login_manager = LoginManager()
-login_manager.login_view = 'login'
-
 
 
 class LoginForm(FlaskForm):
@@ -73,6 +70,11 @@ class OrderForm(FlaskForm):
 
 
 
+
+
+
+
+
 @main_blueprint.context_processor
 def inject_top_books():
     def get_top_books():
@@ -106,16 +108,6 @@ def inject_top_books():
     return {'top_books': get_top_books()}
 
 
-@login_manager.user_loader
-def load_user(user_id):
-    with session_scope() as session:
-        user = session.query(User).get(user_id)
-        if user:
-            session.expunge(user)
-
-        return user
-
-
 @main_blueprint.route("/register", methods=["GET", "POST"])
 def register():
     form = RegistrationForm()
@@ -145,6 +137,12 @@ def register():
         flash(form.errors, category='danger')
 
     return render_template("register.html", form=form)
+
+
+
+@main_blueprint.route("/")
+def route():
+    return render_template("base.html")
 
 
 @main_blueprint.route("/main")
@@ -401,7 +399,6 @@ def order_items():
                 'description': book.description,
                 'year': book.year
             })
-        print(books_data[0]['id'], type(books_data[0]['id']))
         return render_template('order_items.html', books_data=books_data)
 
 
