@@ -1,5 +1,7 @@
 import json
+from random import randint
 from datetime import date, timedelta
+from flask import session as f_session
 from flask import Blueprint, flash, redirect, render_template, url_for, request
 from flask_login import login_required, login_user, logout_user, current_user
 from flask_wtf import FlaskForm
@@ -31,6 +33,15 @@ class RegistrationForm(FlaskForm):
     )
 
 
+class ConfirmCodeForm(FlaskForm):
+    confirm_code = StringField('Confirmation Code', validators=[
+        DataRequired(),
+        Length(min=6, max=6, message='Code must be 6 digits'),
+        Regexp(r'^\d{6}$', message='Code must contain only digits')
+    ])
+    submit = SubmitField('Confirm Registration')
+
+
 class LoginForm(FlaskForm):
     email = StringField("Email", validators=[InputRequired(), Email()])
     password = PasswordField(
@@ -39,7 +50,6 @@ class LoginForm(FlaskForm):
 
 
 class OrderForm(FlaskForm):
-
     payment_method = SelectField('Способ оплаты', choices=[
         ('card', 'Банковской картой'),
         ('cash', 'Наличными'),
@@ -102,6 +112,8 @@ def home():
 @main_blueprint.route("/register", methods=["GET", "POST"])
 def register():
     form = RegistrationForm()
+    confirm_form = ConfirmCodeForm()
+
     if form.validate_on_submit():
         with session_scope() as session:
             user = session.query(User).filter_by(username=form.username.data).first()
@@ -115,20 +127,40 @@ def register():
             flash("User with this email already exists!", 'danger')
             return redirect(url_for("main.register", form=form))
 
+        f_session['confirm_code'] = ''.join([str(randint(0, 9)) for i in range(6)])
+        f_session['user_data'] = {
+            'username': form.username.data,
+            'user_phone': form.user_phone.data,
+            'email': form.email.data,
+            'password_hash': generate_password_hash(form.password.data)
+        }
+        return render_template("register.html", form=form, confirm_form=confirm_form,
+                               show_modal=True, confirm_code=f_session['confirm_code'])
+
+    elif form.errors:
+        flash(form.errors, category='danger')
+
+    return render_template("register.html", form=form)
+
+
+@main_blueprint.route("/confirm_registration", methods=["POST"])
+def confirm_registration():
+    confirm_form = ConfirmCodeForm()
+
+    if confirm_form.validate_on_submit():
+        if confirm_form.confirm_code.data != f_session['confirm_code']:
+            flash("Invalid code, try again!", 'danger')
+            return redirect(url_for("main.register", show_modal=True))
         new_user = User(
-            username=form.username.data,
-            user_phone=form.user_phone.data,
-            email=form.email.data,
-            password_hash=generate_password_hash(form.password.data)
+            username=f_session['user_data']['username'],
+            user_phone=f_session['user_data']['user_phone'],
+            email=f_session['user_data']['email'],
+            password_hash=f_session['user_data']['password_hash']
         )
         with session_scope() as session:
             session.add(new_user)
         flash("Account has been created successfully!", 'success')
         return redirect(url_for("main.login"))
-    elif form.errors:
-        flash(form.errors, category='danger')
-
-    return render_template("register.html", form=form)
 
 
 @main_blueprint.route("/login", methods=['GET', 'POST'])
@@ -317,10 +349,9 @@ def making_an_order():
             session.add(new_order)
             session.flush()
 
-            new_order_id = new_order.id
             for item in cart_data:
                 order_item = OrderItem(
-                    order_id=new_order_id,
+                    order_id=new_order.id,
                     book_id=item['book']['id'],
                     book_count=item['cart_item']['count'],
                     cost=item['cart_item']['count'] * item['book']['price']
@@ -350,9 +381,7 @@ def orders():
                 'id': order.id,
                 'date': order.delivery_date,
                 'status': order.status,
-                'total_amount': order.total_amount,
-                'book_list': order.book_list,
-                'total_books': len(order.book_list)
+                'total_amount': order.total_amount
             })
         return render_template('orders.html', orders_data=orders_data)
 
@@ -360,10 +389,10 @@ def orders():
 @main_blueprint.route('/order_items', methods=['POST'])
 @login_required
 def order_items():
-    book_list_json = request.form.get('book_list')
-    book_list = json.loads(book_list_json)
+    order_id = request.form.get('order_id')
     with session_scope() as session:
-        books = session.query(Book).filter(Book.id.in_(book_list)).all()
+        books = session.query(Book).join(OrderItem, OrderItem.book_id == Book.id) \
+            .filter(OrderItem.order_id == order_id).all()
         books_data = []
         for book in books:
             books_data.append({
@@ -390,7 +419,8 @@ def submit_review():
         new_review = Review(
             review=review_text,
             user_id=current_user.id,
-            book_id=book_id
+            book_id=book_id,
+            rating=rating
         )
         session.add(new_review)
 
@@ -399,7 +429,7 @@ def submit_review():
             book.rating = int(rating)
             book.rating_count = 1
         else:
-            book.rating = (book.rating + int(rating)) / (book.rating_count + 1)
+            book.rating = (book.rating*book.rating_count + int(rating)) / (book.rating_count + 1)
             book.rating_count += 1
 
     return redirect(url_for('main.orders'))

@@ -57,7 +57,7 @@
                             </td>
                             <td>
                                 <form method="POST" action="{{ url_for('main.order_items') }}">
-                                    <input type="hidden" name="book_list" value="{{ order.book_list }}">
+                                    <input type="hidden" name="order_id" value="{{ order.id }}">
                                     <button type="submit" class="btn btn-outline-primary btn-sm">
                                         <i class="bi bi-eye"></i> Подробнее
                                     </button>

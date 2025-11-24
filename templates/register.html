@@ -22,4 +22,43 @@
 <p class="text-center">
     Already have an account? <a href="{{ url_for('main.login') }}">Login</a>
 </p>
+
+<!-- Модальное окно подтверждения -->
+{% if show_modal %}
+<div class="modal fade show d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.5)">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Подтверждение регистрации</h5>
+            </div>
+            <div class="modal-body">
+                <!-- Форма для ввода кода подтверждения -->
+                <form method="POST" action="{{ url_for('main.confirm_registration') }}">
+                    {{ confirm_form.hidden_tag() }}
+
+                    <div class="mb-3">
+                        {{ confirm_form.confirm_code.label(class="form-label") }}
+                        {{ confirm_form.confirm_code(class="form-control", placeholder="Введите 6-значный код") }}
+                        {% for error in confirm_form.confirm_code.errors %}
+                        <div class="invalid-feedback d-block">{{ error }}</div>
+                        {% endfor %}
+                    </div>
+
+                    <!-- Показываем код для тестирования -->
+                    {% if confirm_code %}
+                    <div class="alert alert-info">
+                        <small>Тестовый код: <strong>{{ confirm_code }}</strong></small>
+                    </div>
+                    {% endif %}
+
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-primary flex-fill">Подтвердить</button>
+                        <a href="{{ url_for('main.register') }}" class="btn btn-secondary">Отмена</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
 {% endblock %}

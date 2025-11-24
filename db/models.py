@@ -98,6 +98,7 @@ class Review(Base):
     parent_review_id = Column(Integer)
     user_id = Column(Integer, ForeignKey('users.id'), nullable=False)
     book_id = Column(Integer, ForeignKey('books.id'), nullable=False)
+    rating = Column(Integer)
 
     user = relationship('User', back_populates='review')
     book = relationship('Book', back_populates='in_review')
