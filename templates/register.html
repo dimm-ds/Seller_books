@@ -6,6 +6,11 @@
     {{ form.hidden_tag() }}
     <div class="mb-3">{{ form.username.label(class="form-label") }} {{ form.username(class="form-control") }}
     </div>
+    <div class="mb-3">{{ form.user_phone.label(class="form-label") }} {{ form.user_phone(class="form-control" + (" is-invalid" if form.user_phone.errors else ""), placeholder="+375291234567") }}
+        {% for error in form.user_phone.errors %}
+        <div class="invalid-feedback">{{ error }}</div>
+        {% endfor %}
+    </div>
     <div class="mb-3">{{ form.email.label(class="form-label") }} {{ form.email(class="form-control") }}</div>
     <div class="mb-3">{{ form.password.label(class="form-label") }} {{ form.password(class="form-control") }}
     </div>

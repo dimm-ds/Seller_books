@@ -2,3 +2,67 @@
 
 {% block title %}Home{% endblock %}
 
+{% block top_3 %}
+						<!-- Топ продаж -->
+						<div class="mb-4">
+							<div class="bg-white p-4 rounded shadow-sm">
+								<h3 class="mb-4">Топ 3 продаж недели</h3>
+								<div class="row">
+									{% for book in top_books %}
+									<!-- Книга -->
+									<div class="col-md-4 mb-3">
+										<div class="card book-card h-100 shadow-sm">
+											<div class="book-image-container">
+												<img src="/static/images/books/{{ book.cover }}"
+													 class="card-img-top book-cover"
+													 alt="{{ book.title }}"
+													 onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
+												<div class="book-placeholder" style="display: none;">
+													<div class="d-flex align-items-center justify-content-center h-100 bg-light">
+														<span class="text-muted">Нет изображения</span>
+													</div>
+												</div>
+											</div>
+											<div class="card-body text-center d-flex flex-column">
+												<h5 class="card-title book-title" title="{{ book.title }}">
+													{{ book.title|truncate(30) }}
+												</h5>
+												<p class="card-text text-muted book-author">
+													{{ book.author }}
+												</p>
+												<p class="text-success fw-bold mb-2 book-price">
+													{{ "%.2f"|format(book.price) }} ₽
+												</p>
+												{% if book.rating %}
+												<span class="badge bg-warning text-dark mb-2">
+                            ★ {{ book.rating }}
+                            {% if book.rating_count %}
+                            <small class="ms-1">({{ book.rating_count }})</small>
+                            {% endif %}
+                        </span>
+												{% endif %}
+												<div class="mt-auto">
+													<div class="d-grid gap-2">
+														{% if current_user.is_authenticated %}
+														<form action="{{ url_for('main.add_to_cart') }}" method="POST">
+															<input type="hidden" name="book_id" value="{{ book.id }}">
+															<button type="submit" class="btn btn-primary btn-sm w-100">
+																<i class="bi bi-cart-plus"></i> В корзину
+															</button>
+														</form>
+														{% endif %}
+														<button class="btn btn-outline-secondary btn-sm btn-book-info"
+																data-bs-toggle="modal"
+																data-bs-target="#bookModal{{ book.id }}">
+															<i class="bi bi-info-circle"></i> Подробнее
+														</button>
+													</div>
+												</div>
+											</div>
+										</div>
+									</div>
+									{% endfor %}
+								</div>
+							</div>
+						</div>
+{% endblock %}

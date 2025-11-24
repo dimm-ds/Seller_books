@@ -13,6 +13,7 @@ class User(Base, UserMixin):
 
     id = Column(Integer, primary_key=True)
     username = Column(String(50), unique=True, nullable=False)
+    user_phone = Column(String(20), nullable=False)
     email = Column(String(50), unique=True, nullable=False)
     password_hash = Column(String(256), nullable=False)
 
@@ -63,9 +64,7 @@ class Order(Base):
     date = Column(Date, nullable=False)
     status = Column(String(20), nullable=False)
     total_amount = Column(Float, nullable=False)
-    user_phone = Column(String(20), nullable=False)
     address = Column(String(200), nullable=False)
-    book_list = Column(JSON)
     payment_method = Column(String(50), nullable=False, default='card')
     delivery_method = Column(String(50), nullable=False, default='courier')
     customer_name = Column(String(100), nullable=False)
@@ -102,10 +101,3 @@ class Review(Base):
 
     user = relationship('User', back_populates='review')
     book = relationship('Book', back_populates='in_review')
-
-
-
-
-
-
-

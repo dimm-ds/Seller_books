@@ -14,17 +14,14 @@ from db.models import User, Order, OrderItem, Book, CartItem, Review
 main_blueprint = Blueprint("main", __name__)
 
 
-class LoginForm(FlaskForm):
-    email = StringField("Email", validators=[InputRequired(), Email()])
-    password = PasswordField(
-        "Password", validators=[InputRequired(), Length(min=8, max=36)]
-    )
-
-
 class RegistrationForm(FlaskForm):
     username = StringField(
         "Username", validators=[InputRequired(), Length(max=100, min=4)]
     )
+    user_phone = StringField('Номер телефона', validators=[
+        DataRequired(message='Обязательное поле'),
+        Regexp(r'^\+?[1-9]\d{1,14}$', message='Введите корректный номер телефона')
+    ])
     email = StringField("Email", validators=[InputRequired(), Email()])
     password = PasswordField(
         "Password", validators=[InputRequired(), Length(min=8, max=36)]
@@ -34,11 +31,14 @@ class RegistrationForm(FlaskForm):
     )
 
 
+class LoginForm(FlaskForm):
+    email = StringField("Email", validators=[InputRequired(), Email()])
+    password = PasswordField(
+        "Password", validators=[InputRequired(), Length(min=8, max=36)]
+    )
+
+
 class OrderForm(FlaskForm):
-    phone = StringField('Номер телефона', validators=[
-        DataRequired(message='Обязательное поле'),
-        Regexp(r'^\+?[1-9]\d{1,14}$', message='Введите корректный номер телефона')
-    ])
 
     payment_method = SelectField('Способ оплаты', choices=[
         ('card', 'Банковской картой'),
@@ -69,43 +69,34 @@ class OrderForm(FlaskForm):
     submit = SubmitField('Подтвердить и оформить заказ')
 
 
+@main_blueprint.route("/")
+def home():
+    with session_scope() as session:
+        week_ago = date.today() - timedelta(days=7)
+        top_books = session.query(Book, func.sum(OrderItem.book_count).label('total_sold')) \
+            .join(OrderItem, Book.id == OrderItem.book_id) \
+            .join(Order, OrderItem.order_id == Order.id) \
+            .filter(Order.date >= week_ago) \
+            .group_by(Book.id) \
+            .order_by(func.sum(OrderItem.book_count).desc()) \
+            .limit(3).all()
 
-
-
-
-
-
-@main_blueprint.context_processor
-def inject_top_books():
-    def get_top_books():
-        with session_scope() as session:
-            week_ago = date.today() - timedelta(days=7)
-            top_books = session.query(Book, func.sum(OrderItem.book_count).label('total_sold')) \
-                .join(OrderItem, Book.id == OrderItem.book_id) \
-                .join(Order, OrderItem.order_id == Order.id) \
-                .filter(Order.date >= week_ago) \
-                .group_by(Book.id) \
-                .order_by(func.sum(OrderItem.book_count).desc()) \
-                .limit(3).all()
-
-            books_data = []
-            for book, total_sold in top_books:
-                books_data.append({
-                    'id': book.id,
-                    'title': book.title,
-                    'author': book.author,
-                    'price': book.price,
-                    'cover': book.cover,
-                    'rating': book.rating,
-                    'rating_count': book.rating_count,
-                    'genre': book.genre,
-                    'description': book.description,
-                    'year': book.year,
-                    'total_sold': total_sold
-                })
-            return books_data
-
-    return {'top_books': get_top_books()}
+        books_data = []
+        for book, total_sold in top_books:
+            books_data.append({
+                'id': book.id,
+                'title': book.title,
+                'author': book.author,
+                'price': book.price,
+                'cover': book.cover,
+                'rating': book.rating,
+                'rating_count': book.rating_count,
+                'genre': book.genre,
+                'description': book.description,
+                'year': book.year,
+                'total_sold': total_sold
+            })
+    return render_template("home.html", top_books=books_data)
 
 
 @main_blueprint.route("/register", methods=["GET", "POST"])
@@ -126,6 +117,7 @@ def register():
 
         new_user = User(
             username=form.username.data,
+            user_phone=form.user_phone.data,
             email=form.email.data,
             password_hash=generate_password_hash(form.password.data)
         )
@@ -139,18 +131,6 @@ def register():
     return render_template("register.html", form=form)
 
 
-
-@main_blueprint.route("/")
-def route():
-    return render_template("base.html")
-
-
-@main_blueprint.route("/main")
-@login_required
-def main_route():
-    return render_template("home.html")
-
-
 @main_blueprint.route("/login", methods=['GET', 'POST'])
 def login():
     form = LoginForm()
@@ -159,7 +139,7 @@ def login():
             user = session.query(User).filter_by(email=form.email.data).first()
             if user and check_password_hash(user.password_hash, form.password.data):
                 login_user(user)
-                return redirect(url_for('main.main_route'))
+                return redirect(url_for('main.home'))
         flash('Login failed', 'danger')
     elif request.method == 'POST':
         flash('Login failed', 'danger')
@@ -169,7 +149,7 @@ def login():
 @main_blueprint.route('/logout')
 def logout():
     logout_user()
-    return redirect(url_for('main.login'))
+    return redirect(url_for('main.home'))
 
 
 @main_blueprint.route('/catalog')
@@ -180,8 +160,10 @@ def catalog():
     with session_scope() as session:
         if category:
             books = session.query(Book).filter_by(category=category).all()
-        if subcategory:
+        elif subcategory:
             books = session.query(Book).filter_by(subcategory=subcategory).all()
+        else:
+            books = session.query(Book).all()
 
         books_data = []
         for book in books:
@@ -199,6 +181,40 @@ def catalog():
             })
 
         return render_template('catalog.html', books=books_data, )
+
+
+@main_blueprint.route('/cart', methods=['GET', 'POST'])
+@login_required
+def cart():
+    with session_scope() as session:
+        cart_items_result = session.query(CartItem, Book).join(Book, CartItem.book_id == Book.id) \
+            .filter(CartItem.user_id == current_user.id).all()
+
+        cart_data = []
+        for cart_items, books in cart_items_result:
+            cart_data.append({
+                'cart_item': {
+                    'user_id': cart_items.user_id,
+                    'book_id': cart_items.book_id,
+                    'count': cart_items.count
+                },
+                'book': {
+                    'id': books.id,
+                    'title': books.title,
+                    'author': books.author,
+                    'price': books.price,
+                    'genre': books.genre,
+                    'cover': books.cover,
+                    'description': books.description,
+                    'rating': books.rating,
+                    'rating_count': books.rating_count,
+                    'year': books.year,
+                    'category': books.category,
+                    'subcategory': books.subcategory
+                }
+            })
+
+    return render_template('cart.html', cart_items=cart_data)
 
 
 @main_blueprint.route('/add_to_cart', methods=['POST'])
@@ -248,40 +264,6 @@ def decrease_from_cart():
     return redirect(request.referrer or url_for('main.cart'))
 
 
-@main_blueprint.route('/cart', methods=['GET', 'POST'])
-@login_required
-def cart():
-    with session_scope() as session:
-        cart_items_result = session.query(CartItem, Book).join(Book, CartItem.book_id == Book.id) \
-            .filter(CartItem.user_id == current_user.id).all()
-
-        cart_data = []
-        for cart_items, books in cart_items_result:
-            cart_data.append({
-                'cart_item': {
-                    'user_id': cart_items.user_id,
-                    'book_id': cart_items.book_id,
-                    'count': cart_items.count
-                },
-                'book': {
-                    'id': books.id,
-                    'title': books.title,
-                    'author': books.author,
-                    'price': books.price,
-                    'genre': books.genre,
-                    'cover': books.cover,
-                    'description': books.description,
-                    'rating': books.rating,
-                    'rating_count': books.rating_count,
-                    'year': books.year,
-                    'category': books.category,
-                    'subcategory': books.subcategory
-                }
-            })
-
-    return render_template('cart.html', cart_items=cart_data)
-
-
 @main_blueprint.route('/making_an_order', methods=['GET', 'POST'])
 @login_required
 def making_an_order():
@@ -295,7 +277,6 @@ def making_an_order():
 
         cart_data = []
         total_price = 0
-        book_id_list = []
         for cart_items, books in cart_items_result:
             item_data = {
                 'cart_item': {
@@ -310,7 +291,6 @@ def making_an_order():
                     'cover': books.cover
                 }
             }
-            book_id_list.append(books.id)
             cart_data.append(item_data)
             total_price += cart_items.count * books.price
 
@@ -327,9 +307,7 @@ def making_an_order():
                 date=date.today(),
                 status='Оформлен',
                 total_amount=total_price,
-                user_phone=form.phone.data,
                 address=delivery_address,
-                book_list=book_id_list,
                 payment_method=form.payment_method.data,
                 delivery_method=form.delivery_method.data,
                 customer_name=form.full_name.data,

@@ -49,15 +49,6 @@
                                     {% endfor %}
                                 </div>
 
-                                <!-- Телефон -->
-                                <div class="mb-3">
-                                    {{ form.phone.label(class="form-label") }}
-                                    {{ form.phone(class="form-control" + (" is-invalid" if form.phone.errors else ""), placeholder="+375291234567") }}
-                                    {% for error in form.phone.errors %}
-                                    <div class="invalid-feedback">{{ error }}</div>
-                                    {% endfor %}
-                                </div>
-
                                 <!-- Способ доставки -->
                                 <div class="mb-3">
                                     {{ form.delivery_method.label(class="form-label") }}

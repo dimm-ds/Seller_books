@@ -1,9 +1,10 @@
 from flask import Flask
 from flask_login import LoginManager
+from sqlalchemy import inspect
 
 from config import settings
 from db.models import User
-from db.database import init_db
+from db.database import init_db, engine
 from scripts.init_data import init_books_data
 from routes import main_blueprint
 from db.database import session_scope
@@ -27,7 +28,16 @@ def load_user(user_id):
 
 app.register_blueprint(main_blueprint)
 
+
+def check_and_init_db():
+    inspector = inspect(engine)
+    existing_tables = inspector.get_table_names()
+
+    if not existing_tables:
+        init_db()
+        init_books_data()
+
+
 if __name__ == '__main__':
-    init_db()
-    init_books_data()
+    check_and_init_db()  # ← Только при первом запуске
     app.run(port=settings.APP_PORT, debug=settings.DEBUG)
