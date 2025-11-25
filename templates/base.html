@@ -190,8 +190,8 @@
                 <a class="navbar-brand fw-bold" href="\">Книжный магазин</a>
 
                 <div class="collapse navbar-collapse">
-                    <form class="d-flex mx-auto" style="width: 400px;">
-                        <input class="form-control me-2" type="search" placeholder="Поиск книг..."
+                    <form action="{{ url_for('main.search') }}" method="POST" class="d-flex mx-auto" style="width: 400px;">
+                        <input class="form-control me-2" type="search" name="search" placeholder="Поиск книг..."
                                aria-label="Search">
                         <button class="btn btn-outline-light" type="submit">Найти</button>
                     </form>

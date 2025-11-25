@@ -1,4 +1,3 @@
-import json
 from random import randint
 from datetime import date, timedelta
 from flask import session as f_session
@@ -184,6 +183,16 @@ def logout():
     return redirect(url_for('main.home'))
 
 
+@main_blueprint.route('/search', methods=['POST'])
+def search():
+    book_title = request.form.get('search')
+    if not book_title:
+        return render_template('catalog.html')
+    with session_scope() as session:
+        book_data = [session.query(Book).filter_by(title=book_title).first().__dict__]
+    return render_template('catalog.html', books=book_data)
+
+
 @main_blueprint.route('/catalog')
 def catalog():
     category = request.args.get('category')
@@ -212,7 +221,7 @@ def catalog():
                 'description': book.description
             })
 
-        return render_template('catalog.html', books=books_data, )
+        return render_template('catalog.html', books=books_data)
 
 
 @main_blueprint.route('/cart', methods=['GET', 'POST'])
@@ -374,14 +383,17 @@ def making_an_order():
 @login_required
 def orders():
     with session_scope() as session:
-        orders = session.query(Order).filter_by(user_id=current_user.id).all()
+        orders = session.query(Order, func.sum(OrderItem.book_count)).join(OrderItem, Order.id == OrderItem.order_id)\
+            .filter(Order.user_id == current_user.id)\
+            .group_by(Order.id).all()
         orders_data = []
-        for order in orders:
+        for order, items_sum in orders:
             orders_data.append({
                 'id': order.id,
                 'date': order.delivery_date,
                 'status': order.status,
-                'total_amount': order.total_amount
+                'total_amount': order.total_amount,
+                'total_books': items_sum
             })
         return render_template('orders.html', orders_data=orders_data)
 
